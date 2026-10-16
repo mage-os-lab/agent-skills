@@ -1,4 +1,8 @@
-# Mage-OS agent skills
+<p align="center">
+  <a href="https://mage-os.org"><img src=".github/assets/mage-os-logo.png" alt="Mage-OS" width="120"></a>
+</p>
+
+<h1 align="center">Mage-OS agent skills</h1>
 
 AI agent skills for Magento and Mage-OS: modules, stores, themes and
 everything in between. Works with Claude Code, Codex, Gemini CLI, Cursor,
@@ -60,19 +64,6 @@ or copy the folder to `~/.agents/skills/`, which Codex, Gemini CLI, Cursor,
 GitHub Copilot and OpenCode all read. Each skill's README has the exact
 commands, including how to upload it to Claude.ai.
 
-## Repository layout
-
-```
-.claude-plugin/marketplace.json       Claude Code marketplace listing all skills
-plugins/
-  <name>/
-    README.md                         What the skill does and how to use it
-    .claude-plugin/plugin.json        Claude Code plugin manifest
-    skills/<name>/                    The skill itself (Agent Skills format)
-      SKILL.md
-      references/  assets/  scripts/
-```
-
 ## Contributing
 
 Contributions are welcome, from fixing a typo in a rule to adding a whole
@@ -81,8 +72,9 @@ new skill.
 - **Change a rule.** The standards a skill applies are written down in its
   `references/` folder. Open a pull request against the file; the
   discussion happens there.
-- **Add a skill.** Copy the layout above, add the plugin to
-  `.claude-plugin/marketplace.json`, and add a row to the Skills table.
+- **Add a skill.** Follow the structure of an existing skill in
+  `plugins/`, add the plugin to `.claude-plugin/marketplace.json`, and add a
+  row to the Skills table.
   Keep skills tool-neutral: plain instructions, no features that only one
   agent supports.
 - **Test it.** Run the skill on a few real modules or stores before opening
