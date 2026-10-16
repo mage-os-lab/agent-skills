@@ -1,0 +1,67 @@
+name: Check Extension
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compute-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.supported.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@__CHECKOUT_SHA__ # __CHECKOUT_VERSION__
+      - uses: graycoreio/github-actions-magento2/supported-version@__GRAYCORE_SHA__ # __GRAYCORE_VERSION__
+        id: supported
+        with:
+          project: mage-os
+          kind: currently-supported
+
+  compute-lowest-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.lowest.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@__CHECKOUT_SHA__ # __CHECKOUT_VERSION__
+      - uses: graycoreio/github-actions-magento2/supported-version@__GRAYCORE_SHA__ # __GRAYCORE_VERSION__
+        id: supported
+        with:
+          project: magento-open-source
+          kind: custom
+          custom_versions: 'magento/project-community-edition:__LOWEST_MAGENTO_VERSION__'
+      - name: Pin the matrix to the lowest PHP version composer.json allows
+        id: lowest
+        env:
+          MATRIX: ${{ steps.supported.outputs.matrix }}
+        run: |
+          echo "matrix=$(echo "$MATRIX" | jq -c 'walk(if type == "object" and has("php") then .php = "__LOWEST_PHP_VERSION__" else . end)')" >> "$GITHUB_OUTPUT"
+
+  check-extension:
+    needs: compute-matrix
+    uses: graycoreio/github-actions-magento2/.github/workflows/check-extension.yaml@__GRAYCORE_SHA__ # __GRAYCORE_VERSION__
+    with:
+      matrix: ${{ needs.compute-matrix.outputs.matrix }}
+      magento_repository: https://repo.mage-os.org/
+
+  check-extension-lowest:
+    needs: compute-lowest-matrix
+    uses: graycoreio/github-actions-magento2/.github/workflows/check-extension.yaml@__GRAYCORE_SHA__ # __GRAYCORE_VERSION__
+    with:
+      matrix: ${{ needs.compute-lowest-matrix.outputs.matrix }}
+
+  composer-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@__CHECKOUT_SHA__ # __CHECKOUT_VERSION__
+      - uses: shivammathur/setup-php@__SETUP_PHP_SHA__ # __SETUP_PHP_VERSION__
+        with:
+          php-version: '__LOWEST_PHP_VERSION__'
+          coverage: none
+      - name: Resolve dependencies without installing them
+        run: composer update --no-install --no-interaction --no-progress
+      - name: Audit resolved dependencies
+        run: composer audit --locked --no-dev

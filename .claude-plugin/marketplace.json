@@ -1,0 +1,17 @@
+{
+  "name": "mage-os",
+  "owner": {
+    "name": "Mage-OS",
+    "url": "https://mage-os.org"
+  },
+  "metadata": {
+    "description": "AI agent skills for Magento and Mage-OS"
+  },
+  "plugins": [
+    {
+      "name": "module-standards",
+      "source": "./plugins/module-standards",
+      "description": "Audit a Magento or Mage-OS module against the Mage-OS standards and bring it up to that level"
+    }
+  ]
+}

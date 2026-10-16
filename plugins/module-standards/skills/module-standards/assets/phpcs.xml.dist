@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<ruleset name="Module">
+    <description>Magento coding standard for this module</description>
+    <file>.</file>
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <arg name="extensions" value="php,phtml"/>
+    <arg value="sp"/>
+    <rule ref="Magento2"/>
+</ruleset>

@@ -1,0 +1,13 @@
+{
+  "name": "module-standards",
+  "version": "1.0.0",
+  "description": "Audit a Magento or Mage-OS module against the Mage-OS standards and bring it up to that level: CI, PHPStan, PHPCS, tests, admin UX, security and documentation.",
+  "author": {
+    "name": "Mage-OS",
+    "url": "https://mage-os.org"
+  },
+  "homepage": "https://github.com/mage-os-lab/agent-skills/tree/main/plugins/module-standards",
+  "repository": "https://github.com/mage-os-lab/agent-skills",
+  "license": "OSL-3.0 OR AFL-3.0",
+  "keywords": ["magento", "mage-os", "magento2", "module", "extension", "phpstan", "security", "ci"]
+}
