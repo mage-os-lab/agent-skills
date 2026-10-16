@@ -78,7 +78,7 @@ verified". If the module has no `vendor/`, copy it to a temporary directory,
 `composer install` there (time-box it to a few minutes), run the tools, and
 delete the copy. That way "don't change anything" is still honored.
 
-If a previous scorecard exists (`.mageos-standards.json` in the module root,
+If a previous scorecard exists (`.mage-os-standards.json` in the module root,
 written at the end of step 4), load it and report progress since then.
 
 ## 2. Audit and present the scorecard
@@ -173,7 +173,7 @@ Some ground rules that apply everywhere:
 ## 4. Verify and record
 
 When the chosen areas are done, re-run the audit script and re-score. Write
-`.mageos-standards.json` to the module root with the per-area status and the
+`.mage-os-standards.json` to the module root with the per-area status and the
 date, so a later run can show progress:
 
 ```json
@@ -196,7 +196,7 @@ date, so a later run can show progress:
 }
 ```
 
-Add `.mageos-standards.json` to the module's `.gitattributes` `export-ignore`
+Add `.mage-os-standards.json` to the module's `.gitattributes` `export-ignore`
 list so it doesn't ship to stores. Finish with the updated scorecard and the
 next steps that remain.
 

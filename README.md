@@ -26,7 +26,7 @@ overlap, then open a pull request.
 
 | Skill | What it would do |
 |---|---|
-| **mageos-migration** | Move a store from Magento Open Source to Mage-OS: composer changes, a compatibility report for installed extensions, patches and a test plan. |
+| **mage-os-migration** | Move a store from Magento Open Source to Mage-OS: composer changes, a compatibility report for installed extensions, patches and a test plan. |
 | **store-upgrade** | Plan and carry out a Magento or Mage-OS version upgrade: risky extensions, overridden templates, conflicting plugins and preferences, and a test checklist. |
 | **extension-vetting** | Assess a third-party extension before installing it: code quality, callhome code, security, and conflicts with the extensions already installed. |
 | **store-performance** | Find what slows a store down: full page cache blockers, indexer and cron setup, Redis and OpenSearch configuration, heavy layout handles. |

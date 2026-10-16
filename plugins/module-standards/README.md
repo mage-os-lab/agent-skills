@@ -21,7 +21,7 @@ agent:
 3. **Fixes one area at a time**, only after you say go. Decisions that are
    yours to make (renames, license changes, removing features) stay yours.
 4. **Verifies** by re-running the tools and the audit, and saves the result
-   to `.mageos-standards.json` so the next run shows your progress.
+   to `.mage-os-standards.json` so the next run shows your progress.
 
 It never commits or pushes. All changes stay in your working tree for you to
 review.

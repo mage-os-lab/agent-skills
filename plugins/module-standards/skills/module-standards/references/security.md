@@ -157,7 +157,7 @@ quality bar.
 ## Package hygiene
 
 - `.gitattributes` with `export-ignore` for `.github/`, `docs/` and
-  `.mageos-standards.json` (see `assets/gitattributes`), so composer dist
+  `.mage-os-standards.json` (see `assets/gitattributes`), so composer dist
   archives don't carry screenshots and CI config into every store. Keep
   `Test/` and the tool configs in the package: stores and the Mage-OS
   distribution may run module tests from `vendor/`. (check-extension itself
