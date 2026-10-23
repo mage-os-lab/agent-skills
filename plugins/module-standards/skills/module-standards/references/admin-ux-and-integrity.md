@@ -103,3 +103,41 @@ module vendor for the vendor's benefit, it must go.
   must approve, but it's required, so present it as a required step, not an
   option. Also remove now-unused config fields, cron entries and their
   `config.xml` defaults.
+
+## Questions to ask
+
+**Custom tab and top-level menu** (auto-fixable, one question):
+
+> **Settings sit under a custom "Acme Extensions" tab and the admin has a
+> top-level "Acme" menu.** Merchants look for settings under the core tabs;
+> a vendor tab and menu make the module feel bolted on. Moving the section
+> keeps its ID, so saved settings survive.
+>
+> 1. Move settings to Sales and the menu under Stores (Recommended)
+> 2. Move settings to the shared Mage-OS tab instead
+> 3. Skip for now (Admin UX stays failing, which blocks acceptance)
+
+Pick the core tab in option 1 from what the module affects.
+
+**Scattered sections** (decision `admin_ux.merge_sections`):
+
+> **Settings are spread over 3 sections.** One section is easier to find and
+> to document. Merging changes config paths, so I'd add a data patch that
+> copies saved values to the new paths in every scope.
+>
+> 1. Merge into one section with a migration patch (Recommended)
+> 2. Not now, ask again next run
+> 3. Keep them spread out (blocks acceptance)
+
+**Untranslated text** (auto-fixable): "12 messages and labels aren't
+translatable. Wrap them in `__()` and add `i18n/en_US.csv`? (Recommended)"
+
+**Callhome, upsells, tracking** (decision `integrity.removal`). Required,
+so there is no "skip" that keeps it quietly:
+
+> **`Cron/Ping.php` sends the store URL to `stats.acme.example` every night.**
+> Mage-OS modules can't contact the vendor for the vendor's benefit, and
+> merchants rarely know it happens. Removing it also drops the cron entry.
+>
+> 1. Remove it (Recommended)
+> 2. Keep it for now (blocks acceptance into the Mage-OS org)

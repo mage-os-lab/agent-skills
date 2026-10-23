@@ -11,12 +11,18 @@ import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ElementTree
+from datetime import date
 from pathlib import Path
 
 ACCEPTED_LICENSES = {"OSL-3.0", "AFL-3.0", "MIT", "BSD-3-Clause"}
 SKIPPED_DIRECTORIES = {"vendor", "node_modules", ".git", "generated"}
 CORE_TABS = {"general", "catalog", "customer", "sales", "service", "advanced"}
 SHARED_MAGEOS_TAB = "mageos"
+TARGET_PHPSTAN_LEVEL = 8
+SCORECARD_FILE = ".mage-os-standards.json"
+CURRENT_SCORECARD_VERSION = 2
+SEMVER_TAG = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+DECISIONS_BLOCKING_ACCEPTANCE = {"identity.rename", "license.change", "integrity.removal", "admin_ux.merge_sections"}
 
 RISKY_PATTERNS = {
     "http_client": r"curl_init|GuzzleHttp|HTTP\\Client\\Curl|file_get_contents\(\s*['\"]https?:",
@@ -81,10 +87,29 @@ def read_git_tags(root: Path) -> dict:
     return {
         "is_git_repository": True,
         "tag_count": len(tags),
-        "latest_tags": tags[-5:],
+        "latest_version": find_latest_version(tags),
         "is_new_package": tags == [],
         "origin": remote or None,
         "is_in_mage_os_org": bool(re.search(r"github\.com[:/]mage-os(-lab)?/", remote)) if remote else None,
+    }
+
+
+def find_latest_version(tags: list[str]) -> str | None:
+    versions = [tag for tag in tags if SEMVER_TAG.match(tag)]
+    return max(versions, key=lambda tag: tuple(int(part) for part in SEMVER_TAG.match(tag).groups())) if versions else None
+
+
+def major_version(tag: str | None) -> int:
+    match = SEMVER_TAG.match(tag or "")
+    return int(match.group(1)) if match else -1
+
+
+def suggest_identity(package_name: str | None, module_name: str | None) -> dict:
+    return {
+        "package_is_mage_os": (package_name or "").startswith("mage-os/"),
+        "module_is_mage_os": (module_name or "").startswith("MageOS_"),
+        "suggested_package_name": f"mage-os/{package_name.split('/', 1)[1]}" if package_name and "/" in package_name else None,
+        "suggested_module_name": f"MageOS_{module_name.split('_', 1)[1]}" if module_name and "_" in module_name else None,
     }
 
 
@@ -249,6 +274,75 @@ def read_phpstan_level(root: Path) -> int | str | None:
     return None
 
 
+def count_phpstan_baseline_errors(root: Path) -> int | None:
+    baseline = root / "phpstan-baseline.neon"
+    if not baseline.exists():
+        return None
+    text = baseline.read_text(errors="ignore")
+    counts = re.findall(r"^\s*count:\s*(\d+)", text, re.MULTILINE)
+    return sum(int(count) for count in counts) if counts else len(re.findall(r"^\s*-?\s*(?:raw)?[mM]essage:", text, re.MULTILINE))
+
+
+def read_static_analysis(root: Path) -> dict:
+    level = read_phpstan_level(root)
+    return {
+        "phpstan_level": level,
+        "phpstan_target_level": TARGET_PHPSTAN_LEVEL,
+        "phpstan_levels_to_go": TARGET_PHPSTAN_LEVEL - level if isinstance(level, int) else None,
+        "phpstan_baseline_errors": count_phpstan_baseline_errors(root),
+    }
+
+
+def count_tests(root: Path, module: Path) -> dict:
+    def test_files(kind: str) -> set[Path]:
+        return {path.resolve() for base in {root, module} for path in (base / "Test" / kind).rglob("*Test.php")} if any((base / "Test" / kind).is_dir() for base in {root, module}) else set()
+
+    def test_methods(files: set[Path]) -> int:
+        return sum(len(re.findall(r"function\s+test\w*\s*\(|#\[Test\]|@test\b", path.read_text(errors="ignore"))) for path in files)
+
+    unit, integration = test_files("Unit"), test_files("Integration")
+    source_files = [path for path in iter_files(module, (".php",)) if "Test" not in path.relative_to(module).parts and path.name != "registration.php"]
+    return {
+        "source_php_files": len(source_files),
+        "unit_test_files": len(unit),
+        "unit_test_methods": test_methods(unit),
+        "integration_test_files": len(integration),
+        "integration_test_methods": test_methods(integration),
+    }
+
+
+def is_decision_due(decision: dict, latest_version: str | None, today: date) -> bool:
+    ask_again = decision.get("ask_again", "next_run")
+    if ask_again == "never":
+        return False
+    if ask_again == "next_run":
+        return True
+    if ask_again == "next_major":
+        return major_version(latest_version) > major_version(decision.get("version_at_decision"))
+    try:
+        return date.fromisoformat(ask_again) <= today
+    except ValueError:
+        return True
+
+
+def read_previous_run(root: Path, latest_version: str | None) -> dict | None:
+    scorecard = root / SCORECARD_FILE
+    if not scorecard.exists():
+        return None
+    data = json.loads(scorecard.read_text())
+    decisions = data.get("decisions", {})
+    today = date.today()
+    return {
+        "checked_at": data.get("checked_at"),
+        "areas": data.get("areas", {}),
+        "notes": data.get("notes", []),
+        "needs_migration": data.get("skill_version", 1) < CURRENT_SCORECARD_VERSION,
+        "decisions_due": {key: value for key, value in decisions.items() if is_decision_due(value, latest_version, today)},
+        "decisions_waiting": {key: value for key, value in decisions.items() if not is_decision_due(value, latest_version, today)},
+        "declined_blocking_acceptance": sorted(key for key, value in decisions.items() if key in DECISIONS_BLOCKING_ACCEPTANCE and value.get("choice") == "declined"),
+    }
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit("Usage: audit.py <module-root>")
@@ -256,18 +350,18 @@ def main() -> None:
     module_directory = find_module_directory(root)
     composer = read_composer(root)
     module_name = read_module_name(module_directory)
+    git = read_git_tags(root)
     report = {
         "root": str(root),
         "module_directory": str(module_directory),
-        "git": read_git_tags(root),
+        "git": git,
+        "previous_run": read_previous_run(root, git.get("latest_version")),
         "composer": composer,
         "module_name": module_name,
-        "identity": {
-            "package_is_mage_os": (composer.get("name") or "").startswith("mage-os/"),
-            "module_is_mage_os": (module_name or "").startswith("MageOS_"),
-        },
+        "identity": suggest_identity(composer.get("name"), module_name),
         "presence": presence(root, module_directory),
-        "phpstan_level": read_phpstan_level(root),
+        "static_analysis": read_static_analysis(root),
+        "tests": count_tests(root, module_directory),
         "admin_config": find_config_tabs_and_sections(module_directory),
         "top_level_menu_items": find_top_level_menu_items(module_directory),
         "admin_controllers_without_acl": find_admin_controllers_without_acl(module_directory),

@@ -1,6 +1,6 @@
 {
   "name": "module-standards",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Audit a Magento or Mage-OS module against the Mage-OS standards and bring it up to that level: CI, PHPStan, PHPCS, tests, admin UX, security and documentation.",
   "author": {
     "name": "Mage-OS",

@@ -23,10 +23,11 @@ The point is raising the overall quality of extensions under Mage-OS, so the
 result has to be something the maintainer understands and can keep up, not a
 pile of generated files they never read.
 
-The workflow is always: **audit first, then fix one area at a time with the
-maintainer's go-ahead, then verify.** Never start rewriting before the
-maintainer has seen the scorecard: some findings (a namespace rename, a
-license change) are decisions for the maintainer, not for you.
+The workflow is always: **audit first, walk the maintainer through each
+improvement with a recommendation, fix what they agree to, then verify.**
+Never start rewriting before the maintainer has seen the scorecard: some
+findings (a namespace rename, a license change) are decisions for the
+maintainer, not for you. Your job is to make those decisions easy.
 
 ## 1. Discover the module
 
@@ -79,7 +80,13 @@ verified". If the module has no `vendor/`, copy it to a temporary directory,
 delete the copy. That way "don't change anything" is still honored.
 
 If a previous scorecard exists (`.mage-os-standards.json` in the module root,
-written at the end of step 4), load it and report progress since then.
+written at the end of step 5), the audit script reports it under
+`previous_run`: the area statuses, `decisions_due` (decisions to bring up
+again in step 3), `decisions_waiting` (not yet; mention each in one line)
+and `declined_blocking_acceptance`. Report progress since then. When
+`needs_migration` is true, the file predates structured decisions: turn
+its free-text `notes` about declined items into `decisions` entries in
+step 5.
 
 ## 2. Audit and present the scorecard
 
@@ -138,12 +145,112 @@ PHPCS), because it makes every later change safer to verify; renames before
 docs, because docs reference the names; docs last, because they describe the
 end state.
 
-Then ask which areas to tackle now. A maintainer may want to do only CI today;
-that is fine.
+## 3. Walk the maintainer through each improvement
 
-## 3. Fix, one area at a time
+A scorecard says what's wrong; it doesn't help a maintainer decide what to
+do about it. Many don't know what PHPStan level 8 buys them or why a
+top-level admin menu is a problem. So don't end with "which areas do you
+want to tackle?". Turn the findings into concrete questions, each with a
+recommended answer, and take the maintainer by the hand from the first
+improvement to the last.
 
-For each area the maintainer picks:
+Every question:
+
+- **States where they are and where they should be**, with the number when
+  there is one: "PHPStan runs at level 2; the Mage-OS standard is level 8."
+- **Says what they gain** in one sentence, in merchant or maintainer terms:
+  "Level 8 catches calls on values that can be null, the most common cause
+  of fatal errors in production."
+- **Says what it costs** when that isn't trivial: "Level 8 reports 43
+  errors right now; I'd fix them level by level." Take numbers from the
+  audit script (`static_analysis`, `tests`, `identity.suggested_*`) and
+  from the tools you ran, never estimates.
+- **Offers 2 to 4 concrete options**, the recommended one first and marked
+  "(Recommended)". Options are actions, not just yes/no: include the
+  gentler path for released packages where the reference files allow one,
+  and always a way to skip for now.
+
+For example:
+
+```markdown
+**PHPStan runs at level 2; the Mage-OS standard is level 8.** Level 8 catches
+wrong argument types and calls on possibly-null values before merchants hit
+them. It reports 43 errors right now. Shall I raise the level?
+
+1. Raise to 8, fixing errors level by level (Recommended)
+2. Raise as far as it stays clean today, baseline the rest
+3. Skip for now
+```
+
+```markdown
+**The package is `acme/module-foo`; Mage-OS modules are `mage-os/module-foo`.**
+This is required before the module can move into the Mage-OS org. Because
+v1.4.0 is released, existing installs need a `replace` entry to keep working.
+
+1. Rename, with a `replace` entry and an upgrade note in the CHANGELOG (Recommended)
+2. Keep the current name for now (blocks acceptance into the Mage-OS org)
+```
+
+Each reference file ends with a "Questions to ask" section with the
+standard question for its area. Start from those so the wording stays the
+same from run to run; fill in the real numbers and names.
+
+**Open with how they want to work**, unless the request was read-only.
+Some maintainers want to weigh every change; others want you to get on
+with it:
+
+```markdown
+**I found 14 improvements: 9 I can just do, 5 that need your decision.**
+How do you want to go through them?
+
+1. Do everything I can do on my own in the recommended order, and only
+   stop for the 5 decisions (Recommended)
+2. Go area by area, asking before each one
+3. Only the Required areas for now
+```
+
+With option 1, still stop for every needs-decision item and for any new
+choice a fix turns up (step 4); only the auto-fixable work runs without a
+question. Report what you did after each area so the maintainer can follow
+along.
+
+How to run this step:
+
+- **Use a structured question tool when the agent has one** (in Claude
+  Code: `AskUserQuestion`, recommended option first with "(Recommended)" in
+  its label). Otherwise ask in plain text with numbered options and wait
+  for the answer. Never take silence as a yes.
+- **Follow the proposed order, a few questions at a time.** At most four
+  per round, Required areas before Quality, so the maintainer isn't
+  buried. Fix what they said yes to, then ask the next round.
+- **Bundle the small stuff.** Trivial auto-fixable items go in one question
+  ("Add Dependabot, `SECURITY.md` and `.gitattributes` export rules? Small,
+  safe additions.") instead of one question each.
+- **Needs-decision items always get their own question**, with the
+  trade-off spelled out, including what declining means ("blocks
+  acceptance into the Mage-OS org", "settings stay under a top-level menu
+  merchants have to hunt for").
+- **Bugs found get a question too**: "I found 2 bugs unrelated to the
+  standard. Fix them first? (Recommended)"
+- **A read-only request stays read-only.** When the maintainer said "just
+  audit" or "don't change anything", still present the questions, but as
+  "Want me to do this next?" so they know the way forward. Don't start
+  fixing until they answer.
+- **Respect earlier decisions.** Ask again only what's in
+  `previous_run.decisions_due`, and build on what was said last time: "Last
+  time you chose to climb PHPStan level by level and stopped at 4. Shall I
+  take it to 5?" Decisions in `decisions_waiting` get one line in the
+  scorecard ("Rename: declined 2026-09-01, revisit at 2.0"), not a
+  question.
+- **When the maintainer declines, ask when to bring it up again**: next
+  run, the next major release, or a date ("in 3 months"). Record the answer
+  in `decisions` (step 5). A Required item can be declined but not
+  silenced: it stays in the scorecard as blocking acceptance into the
+  Mage-OS org, whatever they picked.
+
+## 4. Fix, one area at a time
+
+For each improvement the maintainer said yes to:
 
 1. Re-read the reference file's "Fixing" section.
 2. Make the changes. Copy templates from `assets/` and adapt them; never
@@ -151,8 +258,15 @@ For each area the maintainer picks:
 3. Run what can be run locally (PHPStan, PHPCS, PHPUnit, `composer validate`,
    `composer audit`). If a tool can't run in this environment, say so instead
    of claiming it passes.
-4. Summarize what changed and what the maintainer should look at, then move
-   to the next area only when they say so.
+4. When a fix turns up a new choice (a null check that would throw instead
+   of silently continuing, a config path existing stores rely on), stop and
+   ask it the same way as step 3: current state, the options, your
+   recommendation.
+5. Summarize what changed and what the maintainer should look at. Unless
+   they chose to have you do everything at once, ask about the next
+   improvement in the same form: "CI is in place and green.
+   Next: PHPStan is at level 2, the standard is 8. Shall I raise it?
+   (Recommended)"
 
 Some ground rules that apply everywhere:
 
@@ -170,16 +284,16 @@ Some ground rules that apply everywhere:
 - **Never commit or push** unless the maintainer asks. Leave changes in the
   working tree.
 
-## 4. Verify and record
+## 5. Verify and record
 
 When the chosen areas are done, re-run the audit script and re-score. Write
-`.mage-os-standards.json` to the module root with the per-area status and the
-date, so a later run can show progress:
+`.mage-os-standards.json` to the module root with the per-area status, the
+maintainer's decisions and the date, so a later run can show progress:
 
 ```json
 {
   "checked_at": "2026-10-15",
-  "skill_version": 1,
+  "skill_version": 2,
   "areas": {
     "identity": "pass",
     "license": "pass",
@@ -192,13 +306,55 @@ date, so a later run can show progress:
     "documentation": "fail",
     "hygiene": "pass"
   },
-  "notes": ["PHPStan at level 6, baseline of 14 errors"]
+  "decisions": {
+    "identity.rename": {
+      "choice": "declined",
+      "date": "2026-10-15",
+      "reason": "Agencies pin acme/module-foo; rename with 2.0",
+      "ask_again": "next_major",
+      "version_at_decision": "1.4.0"
+    },
+    "static_analysis.phpstan_level": {
+      "choice": "baseline",
+      "date": "2026-10-15",
+      "ask_again": "next_run",
+      "level": 6,
+      "baseline_errors": 14
+    }
+  },
+  "notes": ["Integration tests not run locally: no store available"]
 }
 ```
 
+Record a decision whenever the maintainer answers a needs-decision question
+or picks a path other than the plain recommendation, using these keys:
+
+| Key | Choices | Declining blocks org acceptance |
+|-----|---------|----|
+| `identity.rename` | `accepted`, `declined` | yes |
+| `license.change` | `accepted`, `declined` | yes |
+| `integrity.removal` | `accepted`, `declined` | yes |
+| `admin_ux.merge_sections` | `accepted`, `declined` | yes |
+| `ci.lowest_version_testing` | `test_floor`, `raise_floor`, `declined` | no |
+| `static_analysis.phpstan_level` | `level_8`, `climb`, `baseline`, `declined` | no |
+| `tests.behavior_tests` | `accepted`, `declined` | no |
+| `security.encrypt_config_values` | `accepted`, `declined` | no |
+| `documentation.screenshots` | `playwright`, `placeholders`, `declined` | no |
+
+- `ask_again` is `next_run` (the default), `next_major`, an ISO date, or
+  `never`. Store `version_at_decision` (`git.latest_version`) with
+  `next_major`, so the script can tell when a new major is out.
+- Path decisions carry the numbers the next run compares against: `level`
+  and `baseline_errors` for PHPStan, so it can say "the baseline went from
+  14 to 9 errors".
+- Update a decision when the maintainer revisits it; remove it once the
+  item passes.
+- `notes` is for anything else worth knowing next time, not for decisions.
+
 Add `.mage-os-standards.json` to the module's `.gitattributes` `export-ignore`
-list so it doesn't ship to stores. Finish with the updated scorecard and the
-next steps that remain.
+list so it doesn't ship to stores. Finish with the updated scorecard, then
+offer the remaining improvements as questions in the step 3 form, so the
+maintainer always leaves knowing the recommended next step.
 
 End every run that changed something with the notes below, each exactly as
 a blockquote, after a horizontal rule so they stand apart from the technical
