@@ -117,6 +117,10 @@ time:
 
 **Required: X/5 passing · Quality: Y/5 passing**
 
+**Declined, blocks acceptance into the Mage-OS org:** <each entry in
+`previous_run.declined_blocking_acceptance`, with its date and reason; omit
+this line when there are none>
+
 | Area | Status | Summary |
 |------|--------|---------|
 | Identity | ❌ Fail | Package is `acme/module-foo`, namespace `Acme_Foo` |
@@ -222,7 +226,11 @@ How to run this step:
   for the answer. Never take silence as a yes.
 - **Follow the proposed order, a few questions at a time.** At most four
   per round, Required areas before Quality, so the maintainer isn't
-  buried. Fix what they said yes to, then ask the next round.
+  buried. Fix what they said yes to, then ask the next round. Everything
+  you ask counts toward the four: the opening "how do you want to work"
+  question, and practical ones such as how PHP runs or whether there is a
+  store for screenshots. Ask a practical question only in the round that
+  needs its answer.
 - **Bundle the small stuff.** Trivial auto-fixable items go in one question
   ("Add Dependabot, `SECURITY.md` and `.gitattributes` export rules? Small,
   safe additions.") instead of one question each.
@@ -233,15 +241,19 @@ How to run this step:
 - **Bugs found get a question too**: "I found 2 bugs unrelated to the
   standard. Fix them first? (Recommended)"
 - **A read-only request stays read-only.** When the maintainer said "just
-  audit" or "don't change anything", still present the questions, but as
-  "Want me to do this next?" so they know the way forward. Don't start
+  audit" or "don't change anything", still present the first round of
+  questions (at most four, as above) with the same numbered options, under
+  a "Want me to do any of this next?" heading, and say in one line which
+  areas the next rounds cover. Don't shorten them to yes/no. Don't start
   fixing until they answer.
 - **Respect earlier decisions.** Ask again only what's in
   `previous_run.decisions_due`, and build on what was said last time: "Last
   time you chose to climb PHPStan level by level and stopped at 4. Shall I
   take it to 5?" Decisions in `decisions_waiting` get one line in the
   scorecard ("Rename: declined 2026-09-01, revisit at 2.0"), not a
-  question.
+  question. The exception is a request that contradicts a waiting decision,
+  such as moving into the Mage-OS org while the rename is on hold: point out
+  the conflict and ask again.
 - **When the maintainer declines, ask when to bring it up again**: next
   run, the next major release, or a date ("in 3 months"). Record the answer
   in `decisions` (step 5). A Required item can be declined but not
