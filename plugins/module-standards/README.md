@@ -137,8 +137,14 @@ that runs the skill against a fixture module with known gaps
 (needs Claude Code 2.1.269 or later):
 
 ```bash
-claude plugin eval . --allow-tools Bash Edit Write
+claude plugin eval . --scaffold --allow-tools Edit Write
 ```
+
+`--scaffold` runs the fixture script; without it the cases run against an
+empty workspace. The cases deliberately don't grant Bash, so they run on
+machines whose SSH setup the Bash sandbox can't isolate. The agent audits
+by reading the code instead of running `audit.py`, which keeps the evals
+focused on how the skill talks to the maintainer.
 
 ## Community
 
