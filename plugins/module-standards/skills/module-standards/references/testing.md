@@ -56,3 +56,21 @@ survive refactors. Follow the module's existing test style if it has one.
    a database; if none is available, say so, and note that CI will run them.
 5. If a test reveals a bug, don't silently fix it inside the testing step.
    Report it, and fix it separately with the maintainer's ok.
+
+## Questions to ask
+
+Use the audit script's `tests` counts.
+
+**Tests** (decision `tests.behavior_tests`):
+
+> **The module has 0 tests for 14 PHP classes.** Tests catch regressions
+> before a release reaches stores. I'd start with the behaviors merchants
+> would notice: the gift wrap price on the order total, the feature being
+> off when disabled, and the config being read per website.
+>
+> 1. Write tests for these behaviors, unit and integration (Recommended)
+> 2. Only unit tests for now (no store needed to run them)
+> 3. Skip for now
+
+Then show the behavior list from step 2 of "Fixing" before writing
+anything. When tests exist but miss critical paths, name the gaps instead.

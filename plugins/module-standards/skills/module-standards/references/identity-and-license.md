@@ -76,3 +76,39 @@ conversation, not a code change. If the maintainer is the sole author, copy
 the full license text into `LICENSE` and update the composer.json identifier.
 Don't paste license headers into every file unless the module already does
 that.
+
+## Questions to ask
+
+Use `identity.suggested_package_name` and `identity.suggested_module_name`
+from the audit script.
+
+**Rename** (decision `identity.rename`), released package:
+
+> **The package is `acme/module-foo`; Mage-OS modules are `mage-os/module-foo`
+> with the `MageOS_Foo` module name.** Required before the module can move
+> into the Mage-OS org. v1.4.0 is released, so this is a 2.0: admin roles
+> need re-granting, and a `replace` entry keeps both packages from being
+> installed together. Config paths and saved settings stay as they are.
+>
+> 1. Rename in a 2.0, with `replace` and upgrade notes in the CHANGELOG (Recommended)
+> 2. Not now, ask again at the next major release
+> 3. Keep the current name (blocks acceptance into the Mage-OS org)
+
+For a new package (no tags), drop the migration part: "Nobody depends on
+it yet, so renaming is free now and painful later."
+
+**License** (decision `license.change`), only when the current one isn't
+accepted:
+
+> **The module is licensed GPL-3.0; Mage-OS accepts OSL-3.0, AFL-3.0, MIT
+> or BSD-3-Clause.** GPL conflicts with Magento's OSL license. Changing it
+> needs consent from every copyright holder; git shows 3 outside
+> contributors.
+>
+> 1. Switch to OSL-3.0, after you've confirmed consent with the contributors (Recommended)
+> 2. Switch to MIT, same condition
+> 3. Keep GPL-3.0 (blocks acceptance into the Mage-OS org)
+
+**Composer metadata** is auto-fixable: bundle missing `description`,
+`require` entries, a stray `version` field and `<sequence>` into one
+"Tidy up composer.json and module.xml? (Recommended)" question.

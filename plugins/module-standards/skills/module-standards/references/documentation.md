@@ -108,3 +108,25 @@ maintainer which screenshots to take:
 5. Ask the maintainer to read the Getting started section critically: it's
    the part most likely to contain a wrong assumption about how the feature
    behaves.
+
+## Questions to ask
+
+**README** (auto-fixable, but the maintainer should know the scope):
+
+> **The README is two lines and doesn't say where the settings are.** A
+> merchant who just installed the module can't get it working from it. I'd
+> write it from the code: every setting with its exact admin path, default
+> and scope, a getting-started walkthrough, and troubleshooting.
+>
+> 1. Write the full README, plus CHANGELOG.md (Recommended)
+> 2. Only the Configuration section for now
+> 3. Skip for now
+
+**Screenshots** (decision `documentation.screenshots`):
+
+> **Screenshots make the README much easier to follow.** I can capture them
+> with Playwright if you have a store running with the module enabled.
+>
+> 1. Yes, here's the admin URL and credentials as environment variables (Recommended)
+> 2. Leave marked placeholders, I'll take them myself
+> 3. No screenshots

@@ -81,3 +81,31 @@ If the module is installed inside a store instead (`vendor/` or
 6. For PHPCS, run `vendor/bin/phpcbf` first for the mechanical fixes, review
    the diff, then fix the rest by hand. Warnings matter too: check-extension
    reports them, and many are real (e.g. direct `$_GET` use, missing escaping).
+
+## Questions to ask
+
+Before asking, run PHPStan once at level 8
+(`vendor/bin/phpstan analyse --level 8 --error-format=json`) to get the
+real error count. The audit script's `static_analysis` gives the current
+level and baseline size.
+
+**PHPStan level** (decision `static_analysis.phpstan_level`), released
+package:
+
+> **PHPStan runs at level 2; the Mage-OS standard is level 8.** Level 8
+> catches wrong argument types and calls on possibly-null values before
+> merchants hit them. It reports 43 errors right now.
+>
+> 1. Raise to 8, fixing errors level by level (Recommended)
+> 2. Raise as far as it stays clean today, baseline the rest
+> 3. Skip for now
+
+For a new package, option 2 isn't offered: no baseline, level 8 from the
+start. With an existing baseline, lead with progress: "The baseline holds
+14 errors, down from 22 last time. Shall I work it down further?"
+
+**No PHPStan yet**: "The module has no PHPStan. Add it with
+`bitexpert/phpstan-magento` and start climbing? (Recommended)"
+
+**PHPCS** (auto-fixable): "The Magento coding standard reports 31 errors and
+12 warnings, 25 of them fixable automatically. Fix them all? (Recommended)"

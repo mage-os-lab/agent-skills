@@ -182,3 +182,32 @@ quality bar.
   version, tell the maintainer directly and plainly, recommend a security
   release, and don't describe the exploit in commit messages or the
   CHANGELOG beyond "security fix" until a fixed version is out.
+
+## Questions to ask
+
+**Code fixes** (auto-fixable, one question listing them):
+
+> **I found 3 security issues:** an admin controller without an ACL check
+> (`Controller/Adminhtml/Index/Index.php`), unescaped output in
+> `view/frontend/templates/wrap.phtml:12`, and no `SECURITY.md`. All small
+> local fixes.
+>
+> 1. Fix all three (Recommended)
+> 2. Show me each fix first
+> 3. Skip for now
+
+A likely exploitable vulnerability gets its own question, put plainly, with
+a security release as the recommendation.
+
+**Encrypting a stored secret** (decision `security.encrypt_config_values`):
+
+> **The API key is stored in plain text.** Anyone with database access or a
+> config dump can read it. Encrypting it needs a data patch that encrypts
+> values stores already saved, or the module would read them as garbage.
+>
+> 1. Encrypt it, with a data patch for existing values (Recommended)
+> 2. Not now, ask again next run
+
+**Hygiene** (auto-fixable): "Add `.gitattributes` so CI config and docs
+stay out of the composer package, and Dependabot for composer and GitHub
+Actions? (Recommended)"

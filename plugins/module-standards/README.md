@@ -18,10 +18,17 @@ agent:
    runs PHPStan, PHPCS, the unit tests and `composer audit` for real.
 2. **Shows a scorecard** of 10 areas, each finding marked *auto-fixable* or
    *needs decision*, plus any real bugs it ran into along the way.
-3. **Fixes one area at a time**, only after you say go. Decisions that are
+3. **Walks you through each improvement** with a question and a
+   recommended answer, like *"PHPStan is at level 2, the standard is 8.
+   Shall I raise it?"*, so you know what each change buys you before you
+   say yes. Don't want to weigh every change? Pick "do everything you
+   can" and it only stops for the decisions that are yours.
+4. **Fixes what you agreed to**, one area at a time. Decisions that are
    yours to make (renames, license changes, removing features) stay yours.
-4. **Verifies** by re-running the tools and the audit, and saves the result
-   to `.mage-os-standards.json` so the next run shows your progress.
+5. **Verifies** by re-running the tools and the audit, and saves the result
+   to `.mage-os-standards.json` so the next run shows your progress. Your
+   decisions are saved too: say "not now, ask again at 2.0" and the next
+   run mentions it in one line instead of asking again.
 
 It never commits or pushes. All changes stay in your working tree for you to
 review.
@@ -121,6 +128,17 @@ that project. To update, pull the repository and copy the folder again.
 
 Zip the `skills/module-standards` folder, then go to Customize > Skills >
 "+" > Create skill > Upload a skill. Code execution must be enabled.
+
+## Evals
+
+`evals/` holds a [plugin eval suite](https://code.claude.com/docs/en/plugin-evals)
+that runs the skill against a fixture module with known gaps
+(`evals/fixture/acme-gift-wrap.sh`). Run it after changing the skill
+(needs Claude Code 2.1.269 or later):
+
+```bash
+claude plugin eval . --allow-tools Bash Edit Write
+```
 
 ## Community
 

@@ -78,3 +78,32 @@ Jobs are toggled in `.github/check-extension.json` (see
 6. Push is up to the maintainer. Tell them CI results are the real proof and
    that the first run may surface compile or install errors that weren't
    visible locally.
+
+## Questions to ask
+
+**Add CI** (auto-fixable):
+
+> **The module has no CI.** check-extension installs it into a real
+> Magento/Mage-OS store on every push and pull request and runs compile,
+> coding standard, unit, integration and PHPStan checks across the
+> supported versions. It's Required, and it makes every later change safe
+> to verify.
+>
+> 1. Add check-extension with PHPStan, `composer audit` and Dependabot (Recommended)
+> 2. Skip for now (CI stays failing, which blocks acceptance)
+
+When CI exists but is incomplete, name what's missing: "CI runs, but
+PHPStan is off and actions are pinned to tags. Enable PHPStan and pin to
+commit SHAs? (Recommended)"
+
+**Version floor** (decision `ci.lowest_version_testing`), released
+packages only:
+
+> **composer.json allows Magento 2.4.4 and PHP 8.1, but nothing tests that.**
+> Stores on those versions may be running untested code. Either test the
+> floor, or raise it to what CI covers (2.4.6, PHP 8.2), which is a major
+> version bump.
+>
+> 1. Add a job that tests the lowest allowed versions (Recommended)
+> 2. Raise the floor to the tested versions in the next major
+> 3. Leave it for now
