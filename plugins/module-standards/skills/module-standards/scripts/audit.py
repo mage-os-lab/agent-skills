@@ -104,10 +104,13 @@ def major_version(tag: str | None) -> int:
     return int(match.group(1)) if match else -1
 
 
-def suggest_identity(package_name: str | None, module_name: str | None) -> dict:
+def suggest_identity(package_name: str | None, module_name: str | None, git: dict) -> dict:
+    package_is_mage_os = (package_name or "").startswith("mage-os/")
+    module_is_mage_os = (module_name or "").startswith("MageOS_")
     return {
-        "package_is_mage_os": (package_name or "").startswith("mage-os/"),
-        "module_is_mage_os": (module_name or "").startswith("MageOS_"),
+        "package_is_mage_os": package_is_mage_os,
+        "module_is_mage_os": module_is_mage_os,
+        "looks_like_mage_os_module": package_is_mage_os or module_is_mage_os or bool(git.get("is_in_mage_os_org")),
         "suggested_package_name": f"mage-os/{package_name.split('/', 1)[1]}" if package_name and "/" in package_name else None,
         "suggested_module_name": f"MageOS_{module_name.split('_', 1)[1]}" if module_name and "_" in module_name else None,
     }
@@ -136,7 +139,8 @@ def find_config_tabs_and_sections(root: Path) -> dict:
             sections.append({
                 "id": section.get("id"),
                 "tab": tab,
-                "tab_is_allowed": tab is None or tab in CORE_TABS or tab == SHARED_MAGEOS_TAB,
+                "tab_is_core": tab is None or tab in CORE_TABS,
+                "tab_is_shared_mageos": tab == SHARED_MAGEOS_TAB,
                 "has_resource": section.find("resource") is not None,
             })
     return {"custom_tabs": tabs, "sections": sections}
@@ -334,6 +338,7 @@ def read_previous_run(root: Path, latest_version: str | None) -> dict | None:
     today = date.today()
     return {
         "checked_at": data.get("checked_at"),
+        "target": data.get("target") or ("mage-os" if "identity.rename" in decisions else None),
         "areas": data.get("areas", {}),
         "notes": data.get("notes", []),
         "needs_migration": data.get("skill_version", 1) < CURRENT_SCORECARD_VERSION,
@@ -358,7 +363,7 @@ def main() -> None:
         "previous_run": read_previous_run(root, git.get("latest_version")),
         "composer": composer,
         "module_name": module_name,
-        "identity": suggest_identity(composer.get("name"), module_name),
+        "identity": suggest_identity(composer.get("name"), module_name, git),
         "presence": presence(root, module_directory),
         "static_analysis": read_static_analysis(root),
         "tests": count_tests(root, module_directory),

@@ -2,12 +2,23 @@
 
 ## Criteria
 
-**Package and namespace**
+**Package and namespace (Mage-OS modules only)**
 - composer.json `name` is `mage-os/module-<name>` (lowercase, hyphenated).
   Not `mage-os-lab/...`: the lab is a GitHub org for incubation, not a
   package vendor.
 - PHP namespace is `MageOS\<ModuleName>`, Magento module name is
   `MageOS_<ModuleName>` in `etc/module.xml` and `registration.php`.
+
+For an **own extension** these two are N/A: the vendor keeps their package
+name and namespace, and you don't bring up a rename at all. What still
+applies is consistency: composer `name` is `<vendor>/module-<name>`
+(lowercase, hyphenated), and the PHP namespace, the module name in
+`etc/module.xml` and `registration.php`, the PSR-4 mapping and the ACL /
+template / RequireJS references all use the same vendor and module name.
+A module that is `Acme_Foo` in one place and `AcmeInc_Foo` in another is a
+finding for both targets.
+
+**Composer metadata (both targets)**
 - `type` is `magento2-module`.
 - `description` is a real sentence about what the module does for a merchant.
 - `autoload` has `files: ["registration.php"]` and a PSR-4 mapping that
@@ -41,9 +52,9 @@
 
 ## Fixing
 
-**Renaming to mage-os / MageOS_ is a breaking change** for anyone already
-running the module. Always mark it "needs decision" and explain the impact
-before touching it. What changes:
+**Renaming to mage-os / MageOS_** only happens for a Mage-OS module. It is
+**a breaking change** for anyone already running the module. Always mark it
+"needs decision" and explain the impact before touching it. What changes:
 
 - ACL resource IDs (`Acme_Foo::config` becomes `MageOS_Foo::config`): admin
   roles that had access lose it until re-granted.
@@ -82,7 +93,8 @@ that.
 Use `identity.suggested_package_name` and `identity.suggested_module_name`
 from the audit script.
 
-**Rename** (decision `identity.rename`), released package:
+**Rename** (decision `identity.rename`), Mage-OS modules only, released
+package. An own extension never gets this question:
 
 > **The package is `acme/module-foo`; Mage-OS modules are `mage-os/module-foo`
 > with the `MageOS_Foo` module name.** Required before the module can move

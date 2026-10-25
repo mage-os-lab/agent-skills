@@ -10,7 +10,7 @@ quality bar.
 ## Code
 
 **Admin access**
-- Every admin controller sets `const ADMIN_RESOURCE = 'MageOS_Foo::...'`
+- Every admin controller sets `const ADMIN_RESOURCE = 'Vendor_Foo::...'`
   pointing to a resource defined in `etc/acl.xml`. A controller without it
   inherits `Magento_Backend::admin`, meaning any admin user can reach it.
   **(required)**
@@ -146,13 +146,21 @@ quality bar.
 - GitHub Actions: `permissions: contents: read` at the top, actions pinned to
   commit SHAs, no `pull_request_target` checking out PR code, no secrets used
   in jobs that run for PRs from forks.
-- `SECURITY.md` sends vulnerability reports to **security@mage-os.org**
-  (see `assets/SECURITY.md`), so reports reach the Mage-OS security contact
-  even when a maintainer is unresponsive. An existing SECURITY.md that points
-  elsewhere gets security@mage-os.org added as the primary address. Also
-  suggest the maintainer enables GitHub private vulnerability reporting
-  under Settings > Code security as a second route; you can't do that from
-  the repo files.
+- `SECURITY.md` exists and names a working reporting route. Copy
+  `assets/SECURITY.md` and replace `__SECURITY_EMAIL__` with the address
+  for the target; the placeholder may not remain.
+  - **Mage-OS module**: reports go to **security@mage-os.org**, so they
+    reach the Mage-OS security contact even when a maintainer is
+    unresponsive. An existing SECURITY.md that points elsewhere gets
+    security@mage-os.org added as the primary address.
+  - **Own extension**: reports go to the vendor's own security address. Ask
+    for it if the repo doesn't reveal one (composer.json `support.security`
+    or `support.email`, an existing SECURITY.md, the vendor website); never
+    put security@mage-os.org in a third-party module. Also fill
+    composer.json `support.security` with the same address.
+  - For both, suggest the maintainer enables GitHub private vulnerability
+    reporting under Settings > Code security as a second route; you can't
+    do that from the repo files.
 
 ## Package hygiene
 

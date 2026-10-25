@@ -10,7 +10,7 @@ version.
 
 Please do not open a public issue for security problems.
 
-Report vulnerabilities by email to **security@mage-os.org**. Include the
+Report vulnerabilities by email to **__SECURITY_EMAIL__**. Include the
 module name, the affected version, steps to reproduce and the impact you
 expect. You can also use
 [GitHub's private vulnerability reporting](../../security/advisories/new)
