@@ -3,17 +3,20 @@ name: module-standards
 description: >
   Audit a Magento 2 / Mage-OS module against the Mage-OS extension standards and
   bring it up to that level, area by area: identity (mage-os/ package, MageOS_
-  namespace), license, CI via the check-extension workflow, PHPStan level 8 and
-  Magento PHPCS, behavior-focused tests, admin UX (core or shared Mage-OS
-  config tabs, no top-level menus), no callhome or upsells, security, and documentation with a
+  namespace for modules headed to the Mage-OS org; a vendor's own name is fine
+  for their own extensions), license, CI via the check-extension workflow,
+  PHPStan level 8 and Magento PHPCS, behavior-focused tests, admin UX (core
+  config tabs, the shared Mage-OS tab or the vendor's own single tab, no
+  top-level menus), no callhome or upsells, security, and documentation with a
   README that explains exactly where settings live in the admin, including
   screenshots. Use this skill whenever a maintainer wants to get a module "up to
   Mage-OS standards", prepare a module for the mage-os or mage-os-lab GitHub
-  org, check whether an extension is "ready" or "good enough" for Mage-OS, add
-  quality tooling (PHPStan, PHPCS, GitHub Actions, check-extension) to a
-  Magento module, harden a module's security posture, or write proper module
-  docs, even if they don't mention Mage-OS by name but are working on a
-  Magento 2 module repository.
+  org, check whether an extension is "ready" or "good enough" for Mage-OS,
+  bring their own third-party extension to the same quality bar without
+  renaming it, add quality tooling (PHPStan, PHPCS, GitHub Actions,
+  check-extension) to a Magento module, harden a module's security posture, or
+  write proper module docs, even if they don't mention Mage-OS by name but are
+  working on a Magento 2 module repository.
 ---
 
 # Mage-OS module standards
@@ -29,6 +32,21 @@ Never start rewriting before the maintainer has seen the scorecard: some
 findings (a namespace rename, a license change) are decisions for the
 maintainer, not for you. Your job is to make those decisions easy.
 
+The skill serves two kinds of module, and the first thing to settle is which
+one you have in front of you:
+
+- **Mage-OS module**: lives in, or is headed for, the mage-os or mage-os-lab
+  GitHub org. The full bar applies, including the `mage-os/` package name,
+  the `MageOS_` namespace and the Mage-OS security contact.
+- **Own extension**: a vendor's own module that they want at the same
+  quality level while keeping their own identity. Everything applies except
+  the Mage-OS branding: the vendor's package name and namespace stay, the
+  vendor's own config tab is acceptable, and SECURITY.md points at the
+  vendor. Never propose a rename or a move into the Mage-OS tab for these.
+
+Every reference file states what differs per target; where it says nothing,
+the rule is the same for both.
+
 ## 1. Discover the module
 
 Run the bundled audit script from the module root. It collects mechanical
@@ -42,10 +60,23 @@ python3 <skill-dir>/scripts/audit.py <module-root>
 It prints a JSON report. Treat its findings as leads, not verdicts: a `curl_`
 hit may be a legitimate payment API call, a missing `Test/` directory may be
 fine for a module that is pure layout XML. Read the flagged files before
-judging.
+judging. The script doesn't know the target: `identity.*_is_mage_os`,
+`identity.suggested_*` and `admin_config.custom_tabs` are facts, and whether
+they are findings depends on the target you settle below
+(`identity.looks_like_mage_os_module` and `previous_run.target` help).
 
 Also establish:
 
+- **Target**: Mage-OS module or own extension (see above). It is a Mage-OS
+  module when `previous_run.target` says so, when the package name starts
+  with `mage-os/` or the module name with `MageOS_`, when the audit script
+  reports `git.is_in_mage_os_org` true, when a previous scorecard holds an
+  `identity.rename` decision (only Mage-OS modules get that question), or
+  when the maintainer says they want to contribute it to Mage-OS. If none
+  of that settles it, ask once, in the first round of questions: "Is this
+  module going to the Mage-OS org, or is it your own extension you want at
+  the same bar?" Record the answer as `target` in `.mage-os-standards.json`
+  (step 5) so later runs don't ask again.
 - **Supported versions**: `require.php` and `magento/framework` (or
   `mage-os/framework`) constraints in composer.json. Everything you add must
   work on the *lowest* version allowed. If there is no constraint, ask.
@@ -107,13 +138,19 @@ before judging it; they contain the actual criteria and the common traps.
 | 10 | Maintenance hygiene: package contents, Dependabot, schema | Quality | `references/security.md`, `references/ci.md` |
 
 "Required" items are what Mage-OS needs before accepting a module into the
-org. "Quality" items are the bar we want every module to reach.
+org. "Quality" items are the bar we want every module to reach. For an own
+extension the Required/Quality split is the same, but the Mage-OS-branding
+checks inside Identity, Admin UX and Security are N/A rather than failures,
+and "blocks acceptance into the Mage-OS org" never appears; the reference
+files list exactly which checks that covers.
 
 Present the result in this format so maintainers get the same shape every
 time:
 
 ```markdown
 # Mage-OS standards: <package name>
+
+Target: Mage-OS module | own extension
 
 **Required: X/5 passing · Quality: Y/5 passing**
 
@@ -306,6 +343,7 @@ maintainer's decisions and the date, so a later run can show progress:
 {
   "checked_at": "2026-10-15",
   "skill_version": 2,
+  "target": "mage-os",
   "areas": {
     "identity": "pass",
     "license": "pass",
@@ -362,6 +400,9 @@ or picks a path other than the plain recommendation, using these keys:
 - Update a decision when the maintainer revisits it; remove it once the
   item passes.
 - `notes` is for anything else worth knowing next time, not for decisions.
+- `target` is `mage-os` or `own` (step 1). It is a fact about the module,
+  not a decision, so it has no `ask_again`; change it only when the
+  maintainer says the plan changed.
 
 Add `.mage-os-standards.json` to the module's `.gitattributes` `export-ignore`
 list so it doesn't ship to stores. Finish with the updated scorecard, then
@@ -383,8 +424,9 @@ Always:
 > [Mage-OS Discord](https://mage-os.org/discord-channel/).
 ```
 
-Also, when the module doesn't live in the mage-os-lab or mage-os GitHub org
-yet (the audit script's `git.is_in_mage_os_org` is false or unknown):
+Also, for a Mage-OS module that doesn't live in the mage-os-lab or mage-os
+GitHub org yet (the audit script's `git.is_in_mage_os_org` is false or
+unknown). Skip this note for an own extension; it has its own home:
 
 ```markdown
 > 📦 **Need a GitHub repository for this module?** Ask in the **#tech**

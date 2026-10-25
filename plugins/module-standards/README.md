@@ -37,10 +37,10 @@ review.
 
 | Area | Level | What it checks |
 |---|---|---|
-| Identity | Required | `mage-os/` package name, `MageOS_` namespace, complete composer metadata |
+| Identity | Required | `mage-os/` package name and `MageOS_` namespace for Mage-OS modules (a vendor's own extension keeps its name), complete composer metadata |
 | License | Required | OSL-3.0, AFL-3.0, MIT or BSD-3-Clause; no GPL; third-party code attributed |
 | Integrity | Required | No callhome, upsells, advertising, tracking or license checks |
-| Admin UX and i18n | Required | Settings under a core tab or the shared Mage-OS tab, no top-level menus, ACL per section, all visible text translatable |
+| Admin UX and i18n | Required | Settings under a core tab, the shared Mage-OS tab or (for a vendor's own extension) the vendor's single tab, no top-level menus, ACL per section, all visible text translatable |
 | CI | Required | The [check-extension](https://github.com/graycoreio/github-actions-magento2/blob/main/docs/workflows/check-extension.md) workflow with PHPStan enabled, actions pinned to commit SHAs, `composer audit`, Dependabot |
 | Static analysis | Quality | PHPStan level 8 and the Magento coding standard |
 | Tests | Quality | Tests for behavior and correctness, integration tests for Magento wiring |

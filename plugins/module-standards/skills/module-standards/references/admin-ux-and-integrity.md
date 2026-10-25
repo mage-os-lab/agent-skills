@@ -6,16 +6,25 @@ it should never phone home or advertise.
 
 ## Admin UX criteria
 
-- **No custom config tabs, with one exception.** Sections go under an
-  existing core tab: `general`, `catalog`, `customer`, `sales`, `service`,
-  `advanced`. Pick the one that matches what the module affects: a checkout
-  tweak goes in `sales`, a product attribute feature in `catalog`, developer
-  tooling in `advanced`. The exception is the shared **Mage-OS** tab (tab id
-  `mageos`, label "Mage-OS"): Mage-OS modules may place their section there,
-  and declaring that tab in system.xml is allowed. Any other `<tab>`
-  (vendor-branded or otherwise) fails. When moving a section out of a
-  vendor tab, prefer a core tab if the feature clearly belongs to one;
-  otherwise `mageos` is fine.
+- **Config tabs.** Sections go under an existing core tab: `general`,
+  `catalog`, `customer`, `sales`, `service`, `advanced`. Pick the one that
+  matches what the module affects: a checkout tweak goes in `sales`, a
+  product attribute feature in `catalog`, developer tooling in `advanced`.
+  What else is allowed depends on the target:
+  - **Mage-OS module**: the shared **Mage-OS** tab (tab id `mageos`, label
+    "Mage-OS") is the one exception. Mage-OS modules may place their section
+    there, and declaring that tab in system.xml is allowed. Any other
+    `<tab>` (vendor-branded or otherwise) fails. When moving a section out
+    of a vendor tab, prefer a core tab if the feature clearly belongs to
+    one; otherwise `mageos` is fine.
+  - **Own extension**: the vendor's own tab is acceptable, as long as it is
+    one tab shared by all of that vendor's modules (one `<tab>` id, same
+    label everywhere) and not a tab per module. Don't propose moving it,
+    and don't propose the `mageos` tab: that one is for Mage-OS modules, and
+    a third-party module in it misleads merchants about who maintains it.
+    Using `mageos` from an own extension is a finding. A core tab is still
+    the better fit when the feature clearly belongs to one; say so once as a
+    suggestion, not as a failure.
 - **Config in one place.** All settings for the module live in one section
   (or in groups under an existing core section, e.g. a payment method under
   `payment`). Settings spread over several sections are hard to document and
@@ -90,10 +99,12 @@ module vendor for the vendor's benefit, it must go.
 
 ## Fixing
 
-- **Moving a section out of a vendor tab** keeps the section ID, so config
-  paths don't change and saved settings survive. Only the `<tab>` reference
-  changes. Delete the vendor `<tab>` definition (never the shared `mageos`
-  one; other modules use it). This is safe and auto-fixable.
+- **Moving a section out of a vendor tab** (Mage-OS modules) keeps the
+  section ID, so config paths don't change and saved settings survive. Only
+  the `<tab>` reference changes. Delete the vendor `<tab>` definition (never
+  the shared `mageos` one; other modules use it). This is safe and
+  auto-fixable. For an own extension that sits in the `mageos` tab, the same
+  move goes the other way: into a core tab or the vendor's own tab.
 - **Merging scattered sections** changes config paths, which drops saved
   settings unless you add a data patch that copies values from old paths to
   new ones (all scopes, not just default). Mark as "needs decision".
@@ -117,7 +128,10 @@ module vendor for the vendor's benefit, it must go.
 > 2. Move settings to the shared Mage-OS tab instead
 > 3. Skip for now (Admin UX stays failing, which blocks acceptance)
 
-Pick the core tab in option 1 from what the module affects.
+Pick the core tab in option 1 from what the module affects. For an own
+extension the vendor tab stays, so the question is about the top-level menu
+only and option 2 (the Mage-OS tab) is dropped: "The admin has a top-level
+'Acme' menu. Move it under Stores? (Recommended)"
 
 **Scattered sections** (decision `admin_ux.merge_sections`):
 
