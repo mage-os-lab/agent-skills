@@ -9,8 +9,10 @@ the store root instead of `pub/`. Only a request to the real site shows it.
 Run these checks only on a store the maintainer runs, at the base URL they
 give you, after they said yes to this question (first round of step 3):
 
+**Live site** (decision `live_site.check`):
+
 > **Shall I check the live site at the URL you give me?** I'd send about
-> 25 read-only GET requests to a fixed list of paths (`/.git/HEAD`,
+> 20 read-only GET requests to a fixed list of paths (`/.git/HEAD`,
 > `/app/etc/env.php`, `/admin`, ...) and read the response headers. No login
 > attempts, nothing sent to forms, no other URLs. A WAF may log them.
 >
@@ -28,9 +30,15 @@ answer.
 python3 <skill-dir>/scripts/live_check.py https://store.example [--admin-path <path>]
 ```
 
-It sends GET requests without following redirects, compares each response
-with a random-path "not found" page to rule out stores that answer 200 to
-everything, and prints status codes and verdicts, never response bodies.
+It sends GET requests without following redirects (one hop on the admin
+paths, same host only), compares each response with a random-path "not
+found" page to rule out stores that answer 200 to everything, and prints
+status codes and verdicts, never response bodies.
+
+- Exit 1, `reachable: false`: nothing could be checked; report the error.
+- Exit 2, `homepage_redirects_to`: the base URL redirects (to `www.`, to
+  HTTPS, to a store view). Run again with that URL: checking the redirect
+  would test a host that isn't the store.
 Pass `--admin-path` only when the maintainer gives the real admin path; it
 is reported as `configured_admin_path`, never by name.
 
@@ -49,10 +57,16 @@ finding.
   `magento_version` tell attackers which holes to try. When
   `app/etc/env.php` or `composer.json` is exposed, the document root is
   almost certainly the store root instead of `pub/`.
+- **`app_etc_reachable` false**: true with nothing in `exposed` means PHP
+  ran `app/etc/env.php` instead of serving it. The keys didn't leak this
+  time, but the web root is the store root, not `pub/`: Critical, same fix.
+- `statuses` lists the status code of every path, for the report.
 - **Admin login not public** (`admin.*.login_form_public`): a login form at
   `/admin` or `/backend` means the bots find it. The configured path being
   public is common; restricting it by IP is the stronger fix.
-- **HTTPS enforced** (`plain_http.redirects_to_https`).
+- **HTTPS enforced** (`plain_http.redirects_to_https`). When
+  `plain_http.checked` is false, plain HTTP didn't answer at all (a store
+  on a non-standard port): not a finding.
 - **Security headers** (`security_headers`):
   `Strict-Transport-Security`, `Content-Security-Policy` (report-only is a
   finding, see `admin-and-config.md`), `X-Frame-Options` (Magento sets

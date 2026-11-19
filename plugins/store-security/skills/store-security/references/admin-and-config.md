@@ -40,7 +40,8 @@ or `env.php` (`modules.dumped_config_paths`); those win over the database.
 ## Configuration criteria (Recommended)
 
 - **Production mode** (`env.mage_mode`): developer mode shows stack traces
-  with paths and queries to visitors and is slower.
+  with paths and queries to visitors and is slower. No `MAGE_MODE` at all
+  (`null`) means the `default` mode, which isn't production either.
 - **CSP enforced**: `csp/mode/storefront/report_only` and
   `csp/mode/admin/report_only` 0 (default 1, report-only). In report-only
   mode, a skimmer's script loads and is merely reported. Since 2.4.7

@@ -23,17 +23,19 @@ GUESSABLE_ADMIN_PATHS = {"admin", "backend", "admin_1", "adminhtml", "magento", 
 PUB_PHP_FILES = {"index.php", "get.php", "static.php", "health_check.php", "cron.php"}
 SENSITIVE_PATHS = ["app/etc/env.php", "auth.json", ".env", "var/", "generated/", "pub/media/", "pub/static/"]
 NEVER_TRACKED = re.compile(r"(^|/)(app/etc/env\.php|auth\.json|\.env|[^/]+\.(sql|sql\.gz|pem|key)|id_(rsa|ed25519))$")
-# Patterns for git log -G: they only select commits, the matched text is never printed
+# POSIX extended regexes for git log -G ([[:space:]], not \s: macOS git has no \s); they only
+# select commits, the matched text is never printed
 SECRET_PATTERNS = {
-    "magento_crypt_key": r"'key'\s*=>\s*'[0-9a-zA-Z:_]{32,}",
-    "db_password": r"'password'\s*=>\s*'[^']{4,}'",
-    "repo_magento_auth": r"\"username\"\s*:\s*\"[0-9a-f]{32}\"",
+    "magento_crypt_key": r"'key'[[:space:]]*=>[[:space:]]*'[0-9a-zA-Z:_]{32,}",
+    "db_password": r"'password'[[:space:]]*=>[[:space:]]*'[^']{4,}'",
+    "repo_magento_auth": r'"username"[[:space:]]*:[[:space:]]*"[0-9a-f]{32}"',
     "private_key": r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
     "aws_access_key": r"AKIA[0-9A-Z]{16}",
     "stripe_live_key": r"sk_live_[0-9a-zA-Z]{20,}",
     "github_token": r"gh[pousr]_[0-9A-Za-z]{36}",
 }
 OBFUSCATION = re.compile(r"eval\s*\(\s*(base64_decode|gzinflate|gzuncompress|str_rot13)|assert\s*\(\s*\$_(GET|POST|REQUEST|COOKIE)|\$_(GET|POST|REQUEST|COOKIE)\s*\[[^]]*\]\s*\(")
+PHP_EXTENSION = re.compile(r"\.(php\d?|pht|phtml|phar)$", re.IGNORECASE)
 GIT_TIMEOUT_SECONDS = 120
 
 
@@ -72,10 +74,11 @@ def read_composer_patches(root: Path) -> dict:
     if not composer.exists():
         return {}
     extra = json.loads(composer.read_text()).get("extra", {})
-    patches = extra.get("patches", {})
-    patches_file = extra.get("patches-file")
-    if patches_file and (root / patches_file).exists():
-        patches = json.loads((root / patches_file).read_text()).get("patches", patches)
+    patches = dict(extra.get("patches", {})) if isinstance(extra, dict) else {}
+    # composer-patches v1 names the file in extra.patches-file; v2 reads patches.json by default
+    patches_file = (extra.get("patches-file") if isinstance(extra, dict) else None) or "patches.json"
+    if (root / patches_file).exists():
+        patches.update(json.loads((root / patches_file).read_text()).get("patches", {}))
     return {package: list(entries) if isinstance(entries, dict) else entries for package, entries in patches.items()}
 
 
@@ -106,12 +109,25 @@ def read_env(root: Path) -> dict:
     }
 
 
+def dumped_config_sections(root: Path) -> list[str]:
+    """Config sections kept in files (app:config:dump), which win over the database: only the 'system' part counts."""
+    sections = set()
+    for name in ("config.php", "env.php"):
+        path = root / "app" / "etc" / name
+        source = path.read_text(errors="ignore") if path.exists() else ""
+        start = source.find("'system'")
+        if start >= 0:
+            sections |= set(re.findall(r"'(csp|admin|web|dev|twofactorauth|webapi)'\s*=>", source[start:]))
+    return sorted(sections)
+
+
 def read_enabled_modules(root: Path) -> dict:
     config = root / "app" / "etc" / "config.php"
     if not config.exists():
         return {"present": False}
     source = config.read_text(errors="ignore")
-    state = {name: value == "1" for name, value in re.findall(r"'([A-Z]\w*_\w+)'\s*=>\s*(\d)", source)}
+    modules = source[source.find("'modules'"):] if "'modules'" in source else ""
+    state = {name: value == "1" for name, value in re.findall(r"'([A-Z]\w*_\w+)'\s*=>\s*(\d)", modules)}
     return {
         "present": True,
         "two_factor_auth": state.get("Magento_TwoFactorAuth"),
@@ -120,7 +136,7 @@ def read_enabled_modules(root: Path) -> dict:
         "admin_adobe_ims": state.get("Magento_AdminAdobeIms"),
         "version_module": state.get("Magento_Version"),
         "enabled_third_party_modules": sorted(name for name, enabled in state.items() if enabled and not name.startswith(("Magento_", "MageOS_"))),
-        "dumped_config_paths": sorted(set(re.findall(r"'(csp|admin|web|dev|twofactorauth|webapi)'\s*=>", source))),
+        "dumped_config_paths": dumped_config_sections(root),
     }
 
 
@@ -132,15 +148,15 @@ def read_git(root: Path) -> dict:
     ever_added = (git(root, "log", "--all", "--diff-filter=A", "--name-only", "--format=") or "").splitlines()
     history = {}
     for name, pattern in SECRET_PATTERNS.items():
-        output = git(root, "log", "--all", "-G", pattern, "--format=%h", "--name-only")
+        output = git(root, "log", "--all", "-G", pattern, "--format=commit %h", "--name-only")
         if output is None:
             history[name] = {"error": "git log failed or timed out"}
             continue
         commits, files, current = [], set(), None
         for line in output.splitlines():
-            if re.fullmatch(r"[0-9a-f]{7,}", line):
-                current = line
-                commits.append(line)
+            if line.startswith("commit "):
+                current = line[len("commit "):]
+                commits.append(current)
             elif line and current:
                 files.add(line)
         if commits:
@@ -161,7 +177,7 @@ def find_unexpected_php(root: Path) -> dict:
     return {
         "pub_directory": True,
         "pub_root_php": sorted(path.name for path in pub.glob("*.php") if path.name not in PUB_PHP_FILES),
-        "media_or_static_php": sorted(str(path.relative_to(root)) for base in (pub / "media", pub / "static") if base.is_dir() for path in base.rglob("*.ph*") if path.is_file() and re.search(r"\.ph(p\d?|tml|ar)$", path.name))[:50],
+        "media_or_static_php": sorted(str(path.relative_to(root)) for base in (pub / "media", pub / "static") if base.is_dir() for path in base.rglob("*") if path.is_file() and PHP_EXTENSION.search(path.name))[:50],
     }
 
 
@@ -171,8 +187,8 @@ def find_obfuscated_code(root: Path) -> list[str]:
         directory = root / base
         if not directory.is_dir():
             continue
-        for path in directory.rglob("*.ph*"):
-            if path.is_file() and "static" not in path.relative_to(root).parts[:2]:
+        for path in directory.rglob("*"):
+            if path.is_file() and PHP_EXTENSION.search(path.name) and path.relative_to(root).parts[:2] != ("pub", "static"):
                 for number, line in enumerate(path.read_text(errors="ignore").splitlines(), start=1):
                     if OBFUSCATION.search(line):
                         hits.append(f"{path.relative_to(root)}:{number}")
@@ -187,7 +203,7 @@ def is_decision_due(decision: dict, today: date) -> bool:
         return False
     try:
         return date.fromisoformat(ask_again) <= today
-    except ValueError:
+    except (ValueError, TypeError):
         return True
 
 
@@ -195,8 +211,11 @@ def read_previous_run(root: Path, version: str | None) -> dict | None:
     scorecard = root / SCORECARD_FILE
     if not scorecard.exists():
         return None
-    data = json.loads(scorecard.read_text())
-    decisions = data.get("decisions", {})
+    try:
+        data = json.loads(scorecard.read_text())
+    except ValueError:
+        return {"error": f"{SCORECARD_FILE} is not valid JSON: start a fresh scorecard"}
+    decisions = {key: value for key, value in data.get("decisions", {}).items() if isinstance(value, dict)}
     today = date.today()
 
     def due(decision: dict) -> bool:

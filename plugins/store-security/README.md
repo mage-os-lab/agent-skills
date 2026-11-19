@@ -31,7 +31,7 @@ What it never does:
 - **Print a secret.** Findings say "the crypt key is in commit a1b2c3d",
   never the key.
 - **Touch your live site without asking.** The live checks run only on the
-  URL you give, only after you say yes: about 25 GET requests, no login
+  URL you give, only after you say yes: about 20 GET requests, no login
   attempts.
 - **Clean up a hack.** If it finds a likely skimmer or backdoor, it stops,
   changes nothing, and helps you hand over to your host or a security
