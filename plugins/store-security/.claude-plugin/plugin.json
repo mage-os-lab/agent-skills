@@ -1,0 +1,13 @@
+{
+  "name": "store-security",
+  "version": "0.1.0",
+  "description": "Check a Magento or Mage-OS store's security and fix what's found, with the maintainer's approval: missing patches, vulnerable dependencies, admin hardening, exposed files, CSP and committed secrets.",
+  "author": {
+    "name": "Mage-OS",
+    "url": "https://mage-os.org"
+  },
+  "homepage": "https://github.com/mage-os-lab/agent-skills/tree/main/plugins/store-security",
+  "repository": "https://github.com/mage-os-lab/agent-skills",
+  "license": "OSL-3.0 OR AFL-3.0",
+  "keywords": ["magento", "mage-os", "magento2", "store", "security", "patches", "csp", "composer-audit"]
+}

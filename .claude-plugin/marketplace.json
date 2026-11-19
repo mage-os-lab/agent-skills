@@ -12,6 +12,11 @@
       "name": "module-standards",
       "source": "./plugins/module-standards",
       "description": "Audit a Magento or Mage-OS module against the Mage-OS standards and bring it up to that level"
+    },
+    {
+      "name": "store-security",
+      "source": "./plugins/store-security",
+      "description": "Check a Magento or Mage-OS store's security and fix what's found, with the maintainer's approval"
     }
   ]
 }

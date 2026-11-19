@@ -14,6 +14,7 @@ GitHub Copilot, OpenCode and other tools that support the open
 | Skill | What it does |
 |---|---|
 | [**module-standards**](plugins/module-standards/README.md) | Audits a Magento or Mage-OS module against the Mage-OS extension standards (CI, PHPStan, PHPCS, tests, admin UX, security, documentation) and brings it up to that level, one area at a time. |
+| [**store-security**](plugins/store-security/README.md) | Checks a store's security (missing patches, vulnerable dependencies, signs of compromise, secrets in git, admin and configuration hardening, and the live site with your consent) and fixes what you approve. |
 
 More skills are on the way. Have an idea for one? See
 [Contributing](#contributing).
@@ -30,7 +31,6 @@ overlap, then open a pull request.
 | **store-upgrade** | Plan and carry out a Magento or Mage-OS version upgrade: risky extensions, overridden templates, conflicting plugins and preferences, and a test checklist. |
 | **extension-vetting** | Assess a third-party extension before installing it: code quality, callhome code, security, and conflicts with the extensions already installed. |
 | **store-performance** | Find what slows a store down: full page cache blockers, indexer and cron setup, Redis and OpenSearch configuration, heavy layout handles. |
-| **store-security** | Check a store's security: missing patches, `composer audit` across all dependencies, admin hardening, exposed files, CSP mode, secrets committed to git. |
 
 ## Installation
 
@@ -46,6 +46,7 @@ Then install the skills you want:
 
 ```
 /plugin install module-standards@mage-os
+/plugin install store-security@mage-os
 ```
 
 Update with `/plugin marketplace update mage-os`, or turn on auto-update
